@@ -1,0 +1,38 @@
+OASISFormat: 0.4
+OCamlVersion: >= 3.11
+Name: pa_qualified
+Version: 0.5
+Synopsis: A syntax extension that implements fully qualified module references
+Authors: Max Mouratov
+Maintainers: Max Mouratov
+License: LGPL-2.1 with OCaml linking exception
+LicenseFile: LICENSE.txt
+Plugins: StdFiles (0.2), META (0.2)
+XStdFilesREADME: false
+XStdFilesAUTHORS: false
+BuildTools: ocamlbuild, camlp4
+Homepage: https://github.com/cakeplus/pa_qualified
+AlphaFeatures: ocamlbuild_more_args
+XOCamlbuildExtraArgs: -cflags -w,-40
+
+Description:
+   Pa_qualified adds support for fully qualified module references to OCaml.
+   If a module reference (in any possible context) starts with "Q.", then
+   the rest of the reference denotes a context-independent globally unique
+   path (as if the reference was located at the very beginning of the file).
+   Qualified references can never be shadowed by other definitions
+   (warranty void if "Q" is defined explicitly somewhere).
+
+Library pa_qualified
+  Path: src
+  Modules: Pa_qualified
+  FindlibName: pa_qualified
+  BuildDepends: camlp4.lib, camlp4.quotations, camlp4.extend
+  CompiledObject: byte
+  XMETAType: syntax
+  XMETARequires: camlp4
+
+SourceRepository this
+  Type: git
+  Location: https://github.com/cakeplus/pa_qualified
+  Tag: 0.5
