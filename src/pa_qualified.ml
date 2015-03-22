@@ -96,20 +96,20 @@ struct
       method ident id =
         match id with
 
-          (* Getting the X out of Q.X.* *)
-          | IdAcc (loc1, IdUid (loc2, head), rest) when head = qualified_prefix ->
-              (match Ast.list_of_ident rest [] with
-                | IdUid (_, x) :: _ ->
+          (* Getting the X out of Q.X.*,
+             replacing Q with a reference to the helper module *)
+          | IdAcc _ ->
+              (match Ast.list_of_ident id [] with
+                | IdUid (head_loc, head) :: ((IdUid (_, x) :: _) as rest)
+                  when head = qualified_prefix ->
                     collected <- StringSet.add x collected;
-                    IdAcc (loc1, IdUid (loc2, helper_name), rest)
-                | _ ->
-                    id);
+                    Ast.idAcc_of_list (IdUid (head_loc, helper_name) :: rest)
 
-          (* Module applications can contain Q.X.* *)
-          | IdApp _ as id ->
+                | _ -> id)
+
+          | _ ->
               super#ident id
 
-          | etc -> etc
       end
 
 
