@@ -24,13 +24,12 @@
      (warranty void if "Q" is defined explicitly somewhere).
 
    Implementation:
-     The extension works by injecting a helper module Q at the beginning of
-     the module that is being processed. An example that explains everything:
+     The extension works by injecting a uniquely named helper module at the
+     beginning of the module that is being processed.
 
-       module Q = struct
-         List = List
-         Scanf = Scanf
-       end
+     An example that explains everything:
+
+     Was:
 
        ...
 
@@ -40,11 +39,29 @@
 
        Q.Scanf.Scanning.bscanf
 
+
+     Becomes:
+
+       module _Q_filename_ = struct
+         List = List
+         Scanf = Scanf
+       end
+
+       ...
+
+       _Q_filename_.List.map
+
+       ...
+
+       _Q_filename_.Scanf.Scanning.bscanf
+
 *)
 
 
 open Camlp4
 
+
+module StringSet = Set.Make (String)
 
 module Id: Sig.Id = struct
   let name = "pa_qualified"
@@ -52,7 +69,7 @@ module Id: Sig.Id = struct
 end
 
 
-let helper_module_name = "Q"
+let qualified_prefix = "Q"
 
 
 module Make (AstFilters: Camlp4.Sig.AstFilters) =
@@ -60,42 +77,56 @@ struct
   open AstFilters
 
 
-  (* Collecting all the different Xs in Q.X.* references *)
-  let qualified_reference_collector =
-    let module SSet = Set.Make (String) in
-    object (self) inherit Ast.fold as super
-      val fv = SSet.empty
-      method fv = SSet.elements fv
-      method ident = function
+  (* Generating a globally unique name for the helper module *)
+  let gen_helper_name loc =
+    let fname = Filename.chop_extension (Ast.Loc.file_name loc) in
+    Printf.sprintf "_Q_%s_" fname
 
-        (* Getting the X out of Q.X.* *)
-        | IdAcc (_, IdUid (_, head), rest) when head = helper_module_name ->
-            (match Ast.list_of_ident rest [] with
-              | IdUid (_, x) :: _ ->
-                  {< fv = SSet.add x fv >}
-              | _ ->
-                  self)
 
-        (* Module applications can contain Q.X.* *)
-        | IdApp _ as id ->
-            super#ident id
+  (* Replacing all Qs with the unique name of the helper module,
+     as well as collecting all the different Xs in Q.X.* references *)
+  let make_reference_collector helper_name =
+    object (self) inherit Ast.map as super
 
-        | etc ->
-            self
-    end
+      (* A set of globally referenced modules *)
+      val mutable collected = StringSet.empty
+      method get_collected =
+        StringSet.elements collected
+
+      method ident id =
+        match id with
+
+          (* Getting the X out of Q.X.* *)
+          | IdAcc (loc1, IdUid (loc2, head), rest) when head = qualified_prefix ->
+              (match Ast.list_of_ident rest [] with
+                | IdUid (_, x) :: _ ->
+                    collected <- StringSet.add x collected;
+                    IdAcc (loc1, IdUid (loc2, helper_name), rest)
+                | _ ->
+                    id);
+
+          (* Module applications can contain Q.X.* *)
+          | IdApp _ as id ->
+              super#ident id
+
+          | etc -> etc
+      end
 
 
   (* Injecting the helper module into the implementation *)
   let () =
     AstFilters.register_str_item_filter (fun si ->
-      let qualified = (qualified_reference_collector#str_item si)#fv in
+      let _loc = Ast.loc_of_str_item si in
+      let helper_name = gen_helper_name _loc in
+      let collector = make_reference_collector helper_name in
+      let si = collector#str_item si in
+      let qualified = collector#get_collected in
       match qualified with
         | [] ->
             si
         | ids ->
-            let _loc = Ast.loc_of_str_item si in
             <:str_item<
-              module $uid:(helper_module_name)$ = struct
+              module $uid:(helper_name)$ = struct
                 $list:(ids |> List.map (fun id ->
                          <:str_item<
                            module $uid:(id)$ = $uid:(id)$
@@ -108,14 +139,18 @@ struct
   (* Injecting the helper module into the interface *)
   let () =
     AstFilters.register_sig_item_filter (fun si ->
-      let qualified = (qualified_reference_collector#sig_item si)#fv in
+      let _loc = Ast.loc_of_sig_item si in
+      let helper_name = gen_helper_name _loc in
+      let collector = make_reference_collector helper_name in
+      let si = collector#sig_item si in
+      let qualified = collector#get_collected in
       match qualified with
         | [] ->
             si
         | ids ->
             let _loc = Ast.loc_of_sig_item si in
             <:sig_item<
-              module $uid:(helper_module_name)$: sig
+              module $uid:(helper_name)$: sig
                 $list:(ids |> List.map (fun id ->
                          <:sig_item<
                            module $uid:(id)$: module type of $uid:(id)$
