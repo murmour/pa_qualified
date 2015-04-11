@@ -11,7 +11,7 @@ XStdFilesAUTHORS     : false
 BuildTools           : ocamlbuild, camlp4
 Homepage             : https://github.com/cakeplus/pa_qualified
 OASISFormat          : 0.4
-OCamlVersion         : >= 3.11
+OCamlVersion         : >= 4.01.0
 AlphaFeatures        : ocamlbuild_more_args
 XOCamlbuildExtraArgs : -cflags -w,-40
 
