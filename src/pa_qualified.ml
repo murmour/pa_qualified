@@ -38,6 +38,7 @@ module Id: Sig.Id = struct
 end
 
 
+(* The predefined prefix that denotes a globally qualified name *)
 let qualified_prefix = "Q"
 
 
@@ -117,7 +118,6 @@ struct
         | [] ->
             si
         | ids ->
-            let _loc = Ast.loc_of_sig_item si in
             <:sig_item<
               module $uid:(helper_name)$: sig
                 $list:(ids |> List.map (fun id ->
@@ -131,4 +131,4 @@ struct
 end
 
 
-module M = Camlp4.Register.AstFilter(Id)(Make)
+module M = Camlp4.Register.AstFilter (Id) (Make)
