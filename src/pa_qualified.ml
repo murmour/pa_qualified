@@ -1,7 +1,7 @@
 
 (* Pa_qualified
    -----------------------------------------------------------------------------
-   Copyright (C) 2015, Max Mouratov
+   Copyright (C) 2015, Max Mouratov (mmouratov@gmail.com)
 
    License:
      This library is free software; you can redistribute it and/or
