@@ -13,7 +13,7 @@
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
      See the GNU Library General Public License version 2.1 for more details
-     (enclosed in the file LICENSE.txt).
+     (enclosed in LICENSE.txt).
 
    Description:
      Pa_qualified adds support for fully qualified module references to OCaml.
@@ -23,38 +23,7 @@
      Qualified references can never be shadowed by other definitions
      (warranty void if "Q" is defined explicitly somewhere).
 
-   Implementation:
-     The extension works by injecting a uniquely named helper module at the
-     beginning of the module that is being processed.
-
-     An example that explains everything:
-
-     Was:
-
-       ...
-
-       Q.List.map
-
-       ...
-
-       Q.Scanf.Scanning.bscanf
-
-
-     Becomes:
-
-       module _Q_filename_ = struct
-         List = List
-         Scanf = Scanf
-       end
-
-       ...
-
-       _Q_filename_.List.map
-
-       ...
-
-       _Q_filename_.Scanf.Scanning.bscanf
-
+     See README.rst for more information.
 *)
 
 
