@@ -30,11 +30,11 @@
 open Camlp4
 
 
-module StringSet = Set.Make (String)
+module StringMap = Map.Make (String)
 
 module Id: Sig.Id = struct
   let name = "pa_qualified"
-  let version = "0.5"
+  let version = "0.6"
 end
 
 
@@ -58,10 +58,12 @@ struct
   let make_reference_collector helper_name =
     object (self) inherit Ast.map as super
 
-      (* A set of globally referenced modules *)
-      val mutable collected = StringSet.empty
+      (* A map of globally referenced modules (name -> location) *)
+      val mutable collected: Ast.Loc.t StringMap.t =
+        StringMap.empty
+
       method get_collected =
-        StringSet.elements collected
+        StringMap.bindings collected
 
       method ident id =
         match id with
@@ -70,9 +72,9 @@ struct
              replacing Q with a reference to the helper module *)
           | IdAcc _ ->
               (match Ast.list_of_ident id [] with
-                | IdUid (head_loc, head) :: ((IdUid (_, x) :: _) as rest)
+                | IdUid (head_loc, head) :: ((IdUid (x_loc, x) :: _) as rest)
                   when head = qualified_prefix ->
-                    collected <- StringSet.add x collected;
+                    collected <- StringMap.add x x_loc collected;
                     Ast.idAcc_of_list (IdUid (head_loc, helper_name) :: rest)
 
                 | _ -> id)
@@ -97,7 +99,7 @@ struct
         | ids ->
             <:str_item<
               module $uid:(helper_name)$ = struct
-                $list:(ids |> List.map (fun id ->
+                $list:(ids |> List.map (fun (id, _loc) ->
                          <:str_item<
                            module $uid:(id)$ = $uid:(id)$
                          >>))$
@@ -120,7 +122,7 @@ struct
         | ids ->
             <:sig_item<
               module $uid:(helper_name)$: sig
-                $list:(ids |> List.map (fun id ->
+                $list:(ids |> List.map (fun (id, _loc) ->
                          <:sig_item<
                            module $uid:(id)$: module type of $uid:(id)$
                          >>))$
