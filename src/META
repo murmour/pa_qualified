@@ -1,0 +1,11 @@
+# OASIS_START
+# DO NOT EDIT (digest: e961d74a8552ad73a53748fcb711b568)
+version = "0.6"
+description =
+"A syntax extension that implements support for fully qualified module references"
+requires = "camlp4"
+archive(syntax, preprocessor) = "pa_qualified.cma"
+archive(syntax, toploop) = "pa_qualified.cma"
+exists_if = "pa_qualified.cma"
+# OASIS_STOP
+
